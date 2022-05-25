@@ -1,4 +1,4 @@
-module apidemo
+module github.com/cmuentes/jc-api-demo
 
 go 1.18
 

@@ -11,3 +11,7 @@ type HashResponse struct {
 	clearPassword  string
 	hashedPassword string
 }
+
+type HashRequest struct {
+	Password string `json:"password"`
+}
