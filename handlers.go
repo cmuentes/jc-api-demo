@@ -29,12 +29,19 @@ func CreateHashPasswordRequest(writer http.ResponseWriter, request *http.Request
 
 	cleanupRequests()
 
-	numRequests := len(HashRequests)
-	numRequests++
-
 	var req HashRequest
 	decoder := json.NewDecoder(request.Body)
 	decoder.Decode(&req)
+
+	if len(req.Password) == 0 {
+		writer.Header().Add("Content-type", "application/json")
+		writer.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(writer).Encode("{message: Password is a required input}")
+		return
+	}
+
+	numRequests := len(HashRequests)
+	numRequests++
 
 	Mutex.Lock()
 
@@ -61,6 +68,14 @@ func GetHashStats(writer http.ResponseWriter, request *http.Request) {
 	cleanupRequests()
 
 	count := len(HashRequests)
+
+	if count <= 0 {
+		writer.Header().Add("Content-type", "application/json")
+		writer.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(writer).Encode("{message: No password requests have been submitted and no stats are available}")
+		return
+	}
+
 	var avg int64
 
 	for _, val := range HashRequests {
@@ -91,7 +106,12 @@ func GetHashedPassword(writer http.ResponseWriter, request *http.Request) {
 
 	item, ok := HashRequests[num]
 
-	if ok {
+	if !ok {
+		writer.Header().Add("Content-type", "application/json")
+		writer.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(writer).Encode(fmt.Sprintf(`{message: Request #%d was not found}`, num))
+		return
+	} else {
 		t := item.initiatedOn.Add(time.Second * 5)
 		diff := time.Now().Sub(t)
 

@@ -35,6 +35,7 @@ func main() {
 	router.HandleFunc(fmt.Sprintf("%s/hash/{requestNum}", API_ROOT), GetHashedPassword).Methods("GET")
 	router.HandleFunc(fmt.Sprintf("%s/stats", API_ROOT), GetHashStats).Methods("GET")
 	router.HandleFunc(fmt.Sprintf("%s/shutdown", API_ROOT), func(writer http.ResponseWriter, request *http.Request) {
+		log.Println("Shutdown signal received, shutting down ...")
 		OnShuttingDown(true)
 		writer.WriteHeader(http.StatusAccepted)
 		json.NewEncoder(writer).Encode(fmt.Sprintf(`{shuttingDown: %t}`, (true)))
