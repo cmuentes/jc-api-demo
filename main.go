@@ -14,6 +14,7 @@ func main() {
 	fmt.Println("Starting server ...")
 
 	router := mux.NewRouter()
+
 	router.HandleFunc(fmt.Sprintf("%s/hash", API_ROOT), CreateHashPasswordRequest).Methods("POST")
 	router.HandleFunc(fmt.Sprintf("%s/hash/{requestNum}", API_ROOT), GetHashedPassword).Methods("GET")
 	router.HandleFunc(fmt.Sprintf("%s/stats", API_ROOT), GetHashStats).Methods("GET")
