@@ -16,8 +16,19 @@ import (
 
 var HashRequests = make(map[int]HashResponse)
 var Mutex sync.RWMutex
+var IsShuttingDown = false
+
+func OnShuttingDown(shuttingDown bool) {
+	IsShuttingDown = shuttingDown
+}
 
 func CreateHashPasswordRequest(writer http.ResponseWriter, request *http.Request) {
+	if IsShuttingDown {
+		handleShuttingDown(writer)
+	}
+
+	cleanupRequests()
+
 	numRequests := len(HashRequests)
 	numRequests++
 
@@ -43,6 +54,12 @@ func CreateHashPasswordRequest(writer http.ResponseWriter, request *http.Request
 }
 
 func GetHashStats(writer http.ResponseWriter, request *http.Request) {
+	if IsShuttingDown {
+		handleShuttingDown(writer)
+	}
+
+	cleanupRequests()
+
 	count := len(HashRequests)
 	var avg int64
 
@@ -57,6 +74,12 @@ func GetHashStats(writer http.ResponseWriter, request *http.Request) {
 }
 
 func GetHashedPassword(writer http.ResponseWriter, request *http.Request) {
+	if IsShuttingDown {
+		handleShuttingDown(writer)
+	}
+
+	cleanupRequests()
+
 	params := mux.Vars(request)
 	reqNum := params["requestNum"]
 
@@ -74,7 +97,7 @@ func GetHashedPassword(writer http.ResponseWriter, request *http.Request) {
 
 		if diff.Seconds() >= 5 {
 			Mutex.Lock()
-			item.hashedOn = time.Now()
+
 			var salt = generateRandomSalt(10)
 			var hash = createPasswordHash(item.clearPassword, salt)
 			item.hashedPassword = hash
@@ -82,6 +105,7 @@ func GetHashedPassword(writer http.ResponseWriter, request *http.Request) {
 			writer.Header().Add("Content-type", "application/json")
 			json.NewEncoder(writer).Encode(fmt.Sprintf(`{hashedPassword: %s}`, item.hashedPassword))
 
+			item.hashedOn = time.Now()
 			Mutex.Unlock()
 		} else {
 			writer.WriteHeader(http.StatusAccepted)
@@ -112,4 +136,12 @@ func generateRandomSalt(saltSize int) []byte {
 	}
 
 	return salt
+}
+
+func handleShuttingDown(writer http.ResponseWriter) {
+	writer.WriteHeader(http.StatusAccepted)
+}
+
+func cleanupRequests() {
+	//Not implemented but handle cleaning up requests over a certain threshold to prevent server memory leaks - currently list is infitinite
 }
